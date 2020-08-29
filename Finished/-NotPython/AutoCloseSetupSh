@@ -1,0 +1,42 @@
+#!/bin/bash
+
+OS=$(uname)
+
+sudo mkdir /obin/
+sudo touch /obin/AutoClose
+sudo chmod +x AutoClose
+sudo cat - << EOS > /obin/AutoClose
+#!$(which python3)
+from subprocess import check_output
+import sys
+argv = sys.argv
+
+if len(argv) == 2:
+    stop = argv[1]
+else:
+    stop = input('KeyWord: ')
+
+try:
+	while True:
+		tabs = str(check_output('$(which chrome-cli) list links'.split(' ')))[2:-1].split('\\n')
+		print('All Tabs Found')
+		for n in tabs:
+			if stop in n:
+				check_output(('$(which chrome-cli) close -t ' + n.split(']')[0][1:].split(':')[-1]).split(' '))
+				print('Closed: ' + n)
+				# check_output(('$(which chrome-cli) open ' + n.split('] ')[1] + ' -n').split(' '))
+except KeyboardInterrupt:
+	print('\nStopped auto close tab of the keyword:', stop)
+EOS
+
+if [ $OS == 'Darwin' ]; then
+	brew install chrome-cli
+	echo '*/1 * * * * '$(which python3)' /obin/AutoClose youtube' >> /var/at/tabs/$(whoami)
+fi
+
+if [ $OS == 'Linux' ]; then
+	sudo apt install chrome-cli
+	echo '*/1 * * * * '$(which python3)' /obin/AutoClose youtube' >> /var/spool/cron/$(whoami)
+fi
+
+echo 'SetUp Complete'
